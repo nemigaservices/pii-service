@@ -33,9 +33,8 @@ public class PIIStorage {
 
   private final KeyFactory keyFactory;
 
-
   // [START datastore_build_service]
-  public PIIStorage(){
+  public PIIStorage() {
     // Create an authorized Datastore service using Application Default Credentials.
     this.datastore = DatastoreOptions.getDefaultInstance().getService();
     // Create a Key factory to construct keys associated with this project.
@@ -43,12 +42,11 @@ public class PIIStorage {
   }
   // [END datastore_build_service]
 
-  PIIStorage(Datastore dataStore){
+  PIIStorage(Datastore dataStore) {
     this.datastore = dataStore;
     // Create a Key factory to construct keys associated with this project.
     this.keyFactory = datastore.newKeyFactory().setKind("PII");
   }
-
 
   // [START datastore_add_entity]
   /**
@@ -71,7 +69,6 @@ public class PIIStorage {
   }
   // [END datastore_add_entity]
 
-
   // [START datastore_update_entity]
   /**
    * Updates the PII with new data
@@ -82,7 +79,7 @@ public class PIIStorage {
    * @throws DatastoreException if the transaction fails
    * @throws DataException if there is an issue with the data
    */
-  boolean updatePII(long id, JsonObject piiData) throws DataException{
+  boolean updatePII(long id, JsonObject piiData) throws DataException {
     Transaction transaction = datastore.newTransaction();
     try {
       Entity pii = transaction.get(keyFactory.newKey(id));
@@ -102,7 +99,6 @@ public class PIIStorage {
   }
   // [END datastore_update_entity]
 
-
   // [START datastore_delete_entity]
   /**
    * Deletes a task entity.
@@ -115,8 +111,6 @@ public class PIIStorage {
   }
   // [END datastore_delete_entity]
 
-
-
   // [START datastore_get_entity]
   /**
    * Retrieves PII data
@@ -124,18 +118,19 @@ public class PIIStorage {
    * @param id The ID of the user
    * @return PII data stored in the Json object
    * @throws DatastoreException if the retrieval fails
+   * @throws DataException if there is an issue with the data
    */
-  public JsonObject getPII(long id){
+  public JsonObject getPII(long id) throws DataException {
     Entity pii = datastore.get(keyFactory.newKey(id));
-    if (pii == null){
+    if (pii == null) {
       return null;
     }
 
     JsonObject piiData = new JsonObject();
 
-    for(String name:pii.getNames()){
+    for (String name : pii.getNames()) {
       ValueType valueType = pii.getValue(name).getType();
-      switch(valueType){
+      switch (valueType) {
         case STRING:
           piiData.addProperty(name, pii.getString(name));
           break;
@@ -145,34 +140,33 @@ public class PIIStorage {
         case LONG:
           piiData.addProperty(name, pii.getLong(name));
           break;
+        default:
+          throw new DataException(
+              "Unexpected data type in the PII data in the storage for id: " + id);
       }
     }
     return piiData;
   }
   // [END datastore_get_entity]
-  private void setData(JsonObject piiData, Entity.Builder piiBuilder) throws DataException{
+  private void setData(JsonObject piiData, Entity.Builder piiBuilder) throws DataException {
     Set<Map.Entry<String, JsonElement>> entrySet = piiData.entrySet();
-    for(Map.Entry<String, JsonElement> entry : entrySet){
+    for (Map.Entry<String, JsonElement> entry : entrySet) {
       String key = entry.getKey();
       JsonElement data = piiData.get(entry.getKey());
 
-      if (data.isJsonNull())
-        throw new DataException("Element "+key+" has null value!");
+      if (data.isJsonNull()) throw new DataException("Element " + key + " has null value!");
 
       if (data.isJsonPrimitive()) {
-        if (data.getAsJsonPrimitive().isBoolean())
-          piiBuilder.set(key, data.getAsBoolean());
+        if (data.getAsJsonPrimitive().isBoolean()) piiBuilder.set(key, data.getAsBoolean());
         if (data.getAsJsonPrimitive().isString())
-          piiBuilder.set(key, StringValue.newBuilder(data.getAsString()).setExcludeFromIndexes(true).build());
-        if (data.getAsJsonPrimitive().isNumber()){
+          piiBuilder.set(
+              key, StringValue.newBuilder(data.getAsString()).setExcludeFromIndexes(true).build());
+        if (data.getAsJsonPrimitive().isNumber()) {
           piiBuilder.set(key, data.getAsInt());
         }
-      }
-      else{
-        throw new DataException("Element "+key+" type is not supported!");
+      } else {
+        throw new DataException("Element " + key + " type is not supported!");
       }
     }
   }
-
-
 }

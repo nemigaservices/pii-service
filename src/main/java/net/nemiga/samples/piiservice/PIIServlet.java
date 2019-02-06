@@ -30,11 +30,13 @@ import java.io.IOException;
 @WebServlet("/pii/*")
 public class PIIServlet extends HttpServlet {
 
-  private RequestValidator validator=new RequestValidator();
+  public static final String CONTENT_ENCODING = "Content-Encoding";
+  public static final String APPLICATION_JSON = "application/json";
+  private final RequestValidator validator=new RequestValidator();
 
   @Override
   public void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-    resp.addHeader("Content-Encoding", "application/json");
+    resp.addHeader(CONTENT_ENCODING, APPLICATION_JSON);
     String key = req.getParameter("key");
 
     System.out.println("Received POST request with the key: " + key);
@@ -57,7 +59,7 @@ public class PIIServlet extends HttpServlet {
 
   @Override
   public void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-    resp.addHeader("Content-Encoding", "application/json");
+    resp.addHeader(CONTENT_ENCODING, APPLICATION_JSON);
     String key = req.getParameter("key");
     System.out.println("Received DELETE request with the key: " + key);
     Object responseBody;
@@ -79,7 +81,7 @@ public class PIIServlet extends HttpServlet {
 
   @Override
   public void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-    resp.addHeader("Content-Encoding", "application/json");
+    resp.addHeader(CONTENT_ENCODING, APPLICATION_JSON);
     String key = req.getParameter("key");
 
     System.out.println("Received PUT request with the key: " + key);
@@ -103,7 +105,7 @@ public class PIIServlet extends HttpServlet {
 
   @Override
   public void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-    resp.addHeader("Content-Encoding", "application/json");
+    resp.addHeader(CONTENT_ENCODING, APPLICATION_JSON);
     String key = req.getParameter("key");
 
     System.out.println("Received GET request with the key: " + key);
