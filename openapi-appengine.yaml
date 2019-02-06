@@ -137,6 +137,8 @@ definitions:
         type: "string"
       code:
         type: "integer"
+      id:
+        type: "string"
   piiData:
     type: "object"
     properties:
