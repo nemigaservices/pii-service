@@ -42,12 +42,14 @@ public class PIIServlet extends HttpServlet {
     try {
       JsonObject data = this.validator.getJsonPayload(req);
 
-      System.out.println("Valid json, sending the reply.");
-      responseBody = this.generateResponse(1000, HttpServletResponse.SC_OK, "PII Object created.");
+      String id = "1000";
+
+      System.out.println("Crteated user with the ID: "+id);
+      responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object created.");
 
     } catch (RequestException re) {
       resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      responseBody = generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+      responseBody = generateResponse("none", HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
     }
 
     new Gson().toJson(responseBody, resp.getWriter());
@@ -55,12 +57,46 @@ public class PIIServlet extends HttpServlet {
 
   @Override
   public void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    resp.addHeader("Content-Encoding", "application/json");
+    String key = req.getParameter("key");
+    System.out.println("Received DELETE request with the key: " + key);
+    Object responseBody;
+    try {
+      String id = this.validator.getIdForGetDeletePut(req);
+
+      System.out.println("Deleted user with the ID: "+id);
+      responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object deleted.");
+
+    } catch (RequestException re) {
+      System.err.println("Request error. Error: " + re.getMessage());
+      resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+      responseBody = this.generateResponse("none", HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+    }
+
+    new Gson().toJson(responseBody, resp.getWriter());
 
   }
 
   @Override
   public void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    resp.addHeader("Content-Encoding", "application/json");
+    String key = req.getParameter("key");
 
+    System.out.println("Received PUT request with the key: " + key);
+    Object responseBody;
+    try {
+      String id = this.validator.getIdForGetDeletePut(req);
+
+      System.out.println("Updated user with the ID: "+id);
+      responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object updated.");
+
+    } catch (RequestException re) {
+      System.err.println("Request error. Error: " + re.getMessage());
+      resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+      responseBody = this.generateResponse("none", HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+    }
+
+    new Gson().toJson(responseBody, resp.getWriter());
   }
 
   @Override
@@ -73,25 +109,29 @@ public class PIIServlet extends HttpServlet {
     try {
       String id = this.validator.getIdForGetDeletePut(req);
 
+      String fields = req.getParameter("data");
+
+
       JsonObject data = new JsonObject();
       data.addProperty("key", key);
-      data.addProperty("name", "Joe Test");
+      if (fields == null)
+        data.addProperty("name", "Joe Test");
       data.addProperty("phone", "555-555-5555");
       data.addProperty("email","test@test.org");
-      System.out.println("Valid json, sending the reply.");
+      System.out.println("User found, sending the reply.");
       responseBody = data;
 
     } catch (RequestException re) {
       System.err.println("Invalid json. Error: " + re.getMessage());
       resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      responseBody = this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+      responseBody = this.generateResponse("none", HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
     }
 
     new Gson().toJson(responseBody, resp.getWriter());
 
   }
 
-  private JsonObject generateResponse(int id, int responseCode, String message){
+  private JsonObject generateResponse(String id, int responseCode, String message){
     JsonObject responseObject = new JsonObject();
     responseObject.addProperty("code", responseCode);
     responseObject.addProperty("message",message);
