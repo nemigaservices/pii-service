@@ -53,7 +53,7 @@ paths:
       parameters:
         - name: id
           in: path
-          description: ID of the user to fetch
+          description: ID of the user to update
           required: true
           type: string
         - name: data
@@ -85,7 +85,7 @@ paths:
       parameters:
         - name: id
           in: path
-          description: ID of the user to fetch
+          description: ID of the user to delete
           required: true
           type: string
       responses:
