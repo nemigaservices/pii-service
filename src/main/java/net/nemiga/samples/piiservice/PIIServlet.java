@@ -42,14 +42,14 @@ public class PIIServlet extends HttpServlet {
     try {
       JsonObject data = this.validator.getJsonPayload(req);
 
-      String id = "1000";
+      int id = 1000;
 
       System.out.println("Crteated user with the ID: "+id);
       responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object created.");
 
     } catch (RequestException re) {
       resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      responseBody = generateResponse("none", HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+      responseBody = generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
     }
 
     new Gson().toJson(responseBody, resp.getWriter());
@@ -62,15 +62,15 @@ public class PIIServlet extends HttpServlet {
     System.out.println("Received DELETE request with the key: " + key);
     Object responseBody;
     try {
-      String id = this.validator.getIdForGetDeletePut(req);
+      int id = this.validator.getIdForGetDeletePut(req);
 
       System.out.println("Deleted user with the ID: "+id);
       responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object deleted.");
 
     } catch (RequestException re) {
-      System.err.println("Request error. Error: " + re.getMessage());
+      System.err.println("Request error - ID not found. Error: " + re.getMessage());
       resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      responseBody = this.generateResponse("none", HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+      responseBody = this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
     }
 
     new Gson().toJson(responseBody, resp.getWriter());
@@ -85,19 +85,21 @@ public class PIIServlet extends HttpServlet {
     System.out.println("Received PUT request with the key: " + key);
     Object responseBody;
     try {
-      String id = this.validator.getIdForGetDeletePut(req);
+      int id = this.validator.getIdForGetDeletePut(req);
 
       System.out.println("Updated user with the ID: "+id);
       responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object updated.");
 
     } catch (RequestException re) {
-      System.err.println("Request error. Error: " + re.getMessage());
+      System.err.println("Request error: either ID not found or pahload is not JSON. Error: " + re.getMessage());
       resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      responseBody = this.generateResponse("none", HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+      responseBody = this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
     }
 
     new Gson().toJson(responseBody, resp.getWriter());
   }
+
+
 
   @Override
   public void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -107,7 +109,7 @@ public class PIIServlet extends HttpServlet {
     System.out.println("Received GET request with the key: " + key);
     Object responseBody;
     try {
-      String id = this.validator.getIdForGetDeletePut(req);
+      int id = this.validator.getIdForGetDeletePut(req);
 
       String fields = req.getParameter("data");
 
@@ -124,14 +126,14 @@ public class PIIServlet extends HttpServlet {
     } catch (RequestException re) {
       System.err.println("Invalid json. Error: " + re.getMessage());
       resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      responseBody = this.generateResponse("none", HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+      responseBody = this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
     }
 
     new Gson().toJson(responseBody, resp.getWriter());
 
   }
 
-  private JsonObject generateResponse(String id, int responseCode, String message){
+  private JsonObject generateResponse(int id, int responseCode, String message){
     JsonObject responseObject = new JsonObject();
     responseObject.addProperty("code", responseCode);
     responseObject.addProperty("message",message);

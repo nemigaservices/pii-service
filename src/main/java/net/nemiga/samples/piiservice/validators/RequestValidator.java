@@ -23,12 +23,17 @@ public class RequestValidator {
         }
     }
 
-    public String getIdForGetDeletePut(HttpServletRequest request) throws RequestException{
+    public int getIdForGetDeletePut(HttpServletRequest request) throws RequestException{
         String pathInfo = request.getPathInfo(); // /{value}/test
         String[] pathParts = pathInfo.split("/");
         if (pathParts.length!=2){
             throw new RequestException("Path for GET should match /pii/{ID}");
         }
-        return pathParts[1];
+        try{
+            return Integer.parseInt(pathParts[1]);
+        }
+        catch (Exception e){
+            throw new RequestException("ID is not an integer!");
+        }
     }
 }
