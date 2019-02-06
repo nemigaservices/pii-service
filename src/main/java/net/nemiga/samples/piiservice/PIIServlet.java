@@ -17,8 +17,9 @@
 package net.nemiga.samples.piiservice;
 
 import com.google.gson.*;
+import net.nemiga.samples.piiservice.validators.RequestException;
+import net.nemiga.samples.piiservice.validators.RequestValidator;
 
-import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -26,34 +27,27 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /** A servlet that echoes JSON message bodies. */
-@WebServlet("/pii")
+@WebServlet("/pii/*")
 public class PIIServlet extends HttpServlet {
+
+  private RequestValidator validator=new RequestValidator();
 
   @Override
   public void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
     resp.addHeader("Content-Encoding", "application/json");
-
     String key = req.getParameter("key");
 
-    System.out.println("Received request with the key: " + key);
-    Object responseBody = null;
+    System.out.println("Received POST request with the key: " + key);
+    Object responseBody;
     try {
-      JsonParser parser = new JsonParser();
+      JsonObject data = this.validator.getJsonPayload(req);
 
-      JsonElement bodyElement = parser.parse(req.getReader());
-      JsonObject body = bodyElement.getAsJsonObject();
-      body.addProperty("key", key);
       System.out.println("Valid json, sending the reply.");
-      responseBody = body;
+      responseBody = this.generateResponse(1000, HttpServletResponse.SC_OK, "PII Object created.");
 
-    } catch (JsonParseException je) {
-      System.err.println("Invalid json. Error: " + je.getMessage());
+    } catch (RequestException re) {
       resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      JsonObject error = new JsonObject();
-      error.addProperty("key", key);
-      error.addProperty("code", HttpServletResponse.SC_BAD_REQUEST);
-      error.addProperty("message", "Body was not valid JSON.");
-      responseBody = error;
+      responseBody = generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
     }
 
     new Gson().toJson(responseBody, resp.getWriter());
@@ -71,7 +65,38 @@ public class PIIServlet extends HttpServlet {
 
   @Override
   public void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    resp.addHeader("Content-Encoding", "application/json");
+    String key = req.getParameter("key");
 
+    System.out.println("Received GET request with the key: " + key);
+    Object responseBody;
+    try {
+      String id = this.validator.getIdForGetDeletePut(req);
+
+      JsonObject data = new JsonObject();
+      data.addProperty("key", key);
+      data.addProperty("name", "Joe Test");
+      data.addProperty("phone", "555-555-5555");
+      data.addProperty("email","test@test.org");
+      System.out.println("Valid json, sending the reply.");
+      responseBody = data;
+
+    } catch (RequestException re) {
+      System.err.println("Invalid json. Error: " + re.getMessage());
+      resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+      responseBody = this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+    }
+
+    new Gson().toJson(responseBody, resp.getWriter());
+
+  }
+
+  private JsonObject generateResponse(int id, int responseCode, String message){
+    JsonObject responseObject = new JsonObject();
+    responseObject.addProperty("code", responseCode);
+    responseObject.addProperty("message",message);
+    responseObject.addProperty("id", id);
+    return responseObject;
   }
 
 }
