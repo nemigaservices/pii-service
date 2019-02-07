@@ -14,6 +14,9 @@ import java.sql.SQLException;
 
 import static org.junit.Assert.assertEquals;
 
+/*
+    !!! Do not forget to start SQL Proxy! ./runCloudSQLProxy.sh
+ */
 @RunWith(JUnit4.class)
 public class AuditTest {
 
