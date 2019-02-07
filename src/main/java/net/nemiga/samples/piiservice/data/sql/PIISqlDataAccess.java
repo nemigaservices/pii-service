@@ -1,24 +1,33 @@
-package net.nemiga.samples.piiservice.data.audit;
+package net.nemiga.samples.piiservice.data.sql;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.nemiga.samples.piiservice.data.DataException;
 
+import java.lang.reflect.Method;
 import java.sql.*;
 import java.util.Map;
 import java.util.Set;
 
 /**
- *
+ * Contains methods to access SQL database for audit and access control
  */
-public class PIIDataChangeAudit {
+public class PIISqlDataAccess {
+
     private Connection conn;
 
     private static final String INSERT_AUDIT_RECORD_SQL = "insert into Audit_Log (api_key, user_id, field_name, field_value_as_string) values (?, ?, ?, ?);";
     private static final String OBTAIN_AUDIT_RECORD_SQL = "select api_key, user_id, field_name, field_value_as_string from Audit_Log where api_key=? and user_id=?";
     private static final String DELETE_AUDIT_RECORD_SQL = "delete from Audit_Log where api_key=? and user_id=?";
 
-    public PIIDataChangeAudit(String url) throws DataException {
+    private static final String GET_METHOD_ACCESS_SQL = "select count(*) from Api_Access where api_key=? and method =?";
+
+    /**
+     * Constructs the object
+     * @param url JDBC url to be used for connection
+     * @throws DataException
+     */
+    public PIISqlDataAccess(String url) throws DataException {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             conn = DriverManager.getConnection(url);
@@ -29,7 +38,14 @@ public class PIIDataChangeAudit {
         }
     }
 
-    public void reacordChange(String apiKey, int id, JsonObject piiData) throws DataException{
+    /**
+     * Records the changes in the PII data
+     * @param apiKey API key used for access that made the change
+     * @param id User id the data was changed for
+     * @param piiData JSON object containing the fields and their values for the change
+     * @throws DataException indicates an issue with accessing the database
+     */
+    public void recordChange(String apiKey, int id, JsonObject piiData) throws DataException{
         Set<Map.Entry<String, JsonElement>> entrySet = piiData.entrySet();
         for (Map.Entry<String, JsonElement> entry : entrySet) {
             String dataKey = entry.getKey();
@@ -61,11 +77,40 @@ public class PIIDataChangeAudit {
 
                 statementInsertAuditRecord.executeUpdate();
             } catch (SQLException e) {
-                throw new DataException("SQL error while inserting the audit log record: "+e.getMessage());
+                throw new DataException("SQL error while inserting the sql log record: "+e.getMessage());
             }
         }
     }
 
+    public enum METHOD{GET, PUT, DELETE, POST};
+
+    /**
+     * Checks whether the given API key is allowed to execute a particular method
+     * @param apiKey API key used for access
+     * @param method method the access is checked for
+     * @return true if the key is allowed for an access
+     * @throws DataException indicates an issue with accessing the database
+     */
+    public boolean isMethodAllowed(String apiKey, METHOD method) throws DataException{
+        try (PreparedStatement obtainRecordsStatement = conn.prepareStatement(GET_METHOD_ACCESS_SQL)){
+            obtainRecordsStatement.setString(1, apiKey);
+            obtainRecordsStatement.setString(2, method.toString());
+            try (ResultSet rs = obtainRecordsStatement.executeQuery()) {
+                int count=0;
+                while (rs.next()) {
+                    count = rs.getInt(1);
+                }
+                return count==1;
+            }
+        }
+        catch (SQLException e) {
+            throw new DataException("SQL error while inserting the sql log record: "+e.getMessage());
+        }
+    }
+
+    /*
+        Method is used for testing
+     */
     String getAuditDataAsStringForTesting(String apiKey, int id) throws SQLException{
         try (PreparedStatement obtainRecordsStatement = conn.prepareStatement(OBTAIN_AUDIT_RECORD_SQL)){
             obtainRecordsStatement.setString(1, apiKey);
@@ -83,6 +128,9 @@ public class PIIDataChangeAudit {
         }
     }
 
+    /*
+        Method is used for testing
+     */
     void deleteTestData(String apiKey, int id) throws SQLException{
         try (PreparedStatement statementInsertAuditRecord = conn.prepareStatement(DELETE_AUDIT_RECORD_SQL)) {
             statementInsertAuditRecord.setString(1, apiKey);

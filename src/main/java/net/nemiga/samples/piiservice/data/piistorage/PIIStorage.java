@@ -159,10 +159,10 @@ public class PIIStorage {
 
       if (data.isJsonPrimitive()) {
         if (data.getAsJsonPrimitive().isBoolean()) piiBuilder.set(key, data.getAsBoolean());
-        if (data.getAsJsonPrimitive().isString())
+        else if (data.getAsJsonPrimitive().isString())
           piiBuilder.set(
               key, StringValue.newBuilder(data.getAsString()).setExcludeFromIndexes(true).build());
-        if (data.getAsJsonPrimitive().isNumber()) {
+        else if (data.getAsJsonPrimitive().isNumber()) {
           piiBuilder.set(key, data.getAsInt());
         }
       } else {

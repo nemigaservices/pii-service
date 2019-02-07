@@ -1,4 +1,4 @@
-package net.nemiga.samples.piiservice.data.audit;
+package net.nemiga.samples.piiservice.data.sql;
 
 import com.google.gson.JsonObject;
 import net.nemiga.samples.piiservice.data.DataException;
@@ -17,7 +17,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(JUnit4.class)
 public class AuditTest {
 
-    private PIIDataChangeAudit auditDb;
+    private PIISqlDataAccess auditDb;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -25,7 +25,7 @@ public class AuditTest {
     @Before
     public void setUp() throws DataException {
         String url = "jdbc:mysql://dbuser:dbuser@127.0.0.1:3306/pii";
-        auditDb = new PIIDataChangeAudit(url);
+        auditDb = new PIISqlDataAccess(url);
     }
 
     @Test
@@ -35,15 +35,15 @@ public class AuditTest {
         pii.addProperty("phone", "555-555-5555");
         pii.addProperty("email", "test@test.com");
 
-        this.auditDb.reacordChange("test", -1, pii);
+        this.auditDb.recordChange("test", -1, pii);
 
         String testStr = this.auditDb.getAuditDataAsStringForTesting("test", -1);
 
-    assertEquals(
-        "test, -1, name, Test\n"
+        assertEquals(
+            "test, -1, name, Test\n"
             + "test, -1, phone, 555-555-5555\n"
             + "test, -1, email, test@test.com\n",
-        testStr);
+            testStr);
     }
 
     @After
