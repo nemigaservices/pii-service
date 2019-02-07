@@ -32,6 +32,12 @@
     <jetty.maven.plugin>9.3.8.v20160314</jetty.maven.plugin>
 
     <failOnMissingWebXml>false</failOnMissingWebXml> <!-- REQUIRED -->
+
+    <INSTANCE_CONNECTION_NAME>pii-service:us-west1:pii-service</INSTANCE_CONNECTION_NAME>
+    <user>dbuser</user>
+    <password>dbuser</password>
+    <database>pii</database>
+    <sqlURL>jdbc:mysql://goo0gle/${database}?cloudSqlInstance=${INSTANCE_CONNECTION_NAME}&amp;socketFactory=com.google.cloud.sql.mysql.SocketFactory&amp;user=${user}&amp;password=${password}&amp;useSSL=false</sqlURL>
   </properties>
 
   <dependencies>
@@ -54,6 +60,17 @@
       <artifactId>google-cloud-datastore</artifactId>
       <version>1.52.0</version>
     </dependency>
+    <dependency>                        <!-- http://dev.mysql.com/doc/connector-j/en/ -->
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>6.0.5</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>mysql-socket-factory-connector-j-6</artifactId>
+      <version>1.0.11</version>
+    </dependency>
+
     <!-- Test dependencies -->
     <dependency>
       <groupId>junit</groupId>
@@ -64,6 +81,12 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
     <!-- for hot reload of the web application -->
     <outputDirectory>${project.build.directory}/${project.build.finalName}/WEB-INF/classes</outputDirectory>
     <plugins>

@@ -30,8 +30,8 @@ import java.io.IOException;
 @WebServlet("/pii/*")
 public class PIIServlet extends HttpServlet {
 
-  public static final String CONTENT_ENCODING = "Content-Encoding";
-  public static final String APPLICATION_JSON = "application/json";
+  private static final String CONTENT_ENCODING = "Content-Encoding";
+  private static final String APPLICATION_JSON = "application/json";
   private final RequestValidator validator=new RequestValidator();
 
   @Override

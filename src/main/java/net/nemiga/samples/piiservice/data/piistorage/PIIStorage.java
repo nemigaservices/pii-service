@@ -19,6 +19,7 @@ package net.nemiga.samples.piiservice.data.piistorage;
 import com.google.cloud.datastore.*;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import net.nemiga.samples.piiservice.data.DataException;
 
 import java.util.Map;
 import java.util.Set;

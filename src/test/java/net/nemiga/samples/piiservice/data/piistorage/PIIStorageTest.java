@@ -16,20 +16,10 @@
 
 package net.nemiga.samples.piiservice.data.piistorage;
 
-import com.google.api.client.json.Json;
-import com.google.cloud.Timestamp;
 import com.google.cloud.datastore.*;
-import com.google.cloud.datastore.StructuredQuery.CompositeFilter;
-import com.google.cloud.datastore.StructuredQuery.OrderBy;
-import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
 import com.google.cloud.datastore.testing.LocalDatastoreHelper;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterators;
-import com.google.datastore.v1.TransactionOptions;
-import com.google.datastore.v1.TransactionOptions.ReadOnly;
 import com.google.gson.JsonObject;
+import net.nemiga.samples.piiservice.data.DataException;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
@@ -37,11 +27,8 @@ import org.junit.runners.JUnit4;
 import org.threeten.bp.Duration;
 
 import java.io.IOException;
-import java.util.*;
 import java.util.concurrent.TimeoutException;
 
-import static java.util.Calendar.DECEMBER;
-import static java.util.Calendar.JANUARY;
 import static org.junit.Assert.*;
 
 /**
@@ -94,7 +81,7 @@ public class PIIStorageTest {
 
 
   @Test
-  public void testFullCycle() throws DataException{
+  public void testFullCycle() throws DataException {
     JsonObject pii = new JsonObject();
     pii.addProperty("name", "Test");
     pii.addProperty("phone", "555-555-5555");
