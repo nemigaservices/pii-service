@@ -25,7 +25,6 @@ import net.nemiga.samples.piiservice.processors.ReturnedDataProcessor;
 import net.nemiga.samples.piiservice.validators.RequestException;
 import net.nemiga.samples.piiservice.validators.RequestValidator;
 
-import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -46,7 +45,7 @@ public class PIIServlet extends HttpServlet {
   private PIISqlDataAccess piiSqlDataAccess = null;
 
   @Override
-  public void init() throws ServletException {
+  public void init() {
       Properties properties = new Properties();
       try {
         properties.load(getServletContext().getResourceAsStream("/WEB-INF/classes/config.properties"));
@@ -55,10 +54,8 @@ public class PIIServlet extends HttpServlet {
         this.piiSqlDataAccess = new PIISqlDataAccess(url);
       } catch (IOException e) {
         System.err.println("Cannot load URL property: "+e.getMessage());  // Servlet Init should never fail.
-        return;
       } catch (DataException e) {
         System.err.println("Cannot initialize the SQL module: "+e.getMessage());  // Servlet Init should never fail.
-        return;
       }
   }
 
@@ -71,21 +68,27 @@ public class PIIServlet extends HttpServlet {
     Object responseBody;
     if (piiSqlDataAccess != null) {
       try {
-        JsonObject data = this.validator.getJsonPayload(req);
-        // TODO: Add validation for the presense of the required fiedls
+        if (piiSqlDataAccess.isMethodAllowed(key, PIISqlDataAccess.METHOD.POST)){
+          JsonObject data = this.validator.getJsonPayload(req);
+          // TODO: Add validation for the presense of the required fiedls
 
-        long id = piiStorage.createPII(data);
-        this.piiSqlDataAccess.recordChange(key, id, data);
-        System.out.println("Created user with the ID: " + id);
-        responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object created.");
+          long id = piiStorage.createPII(data);
+          this.piiSqlDataAccess.recordChange(key, id, data);
+          System.out.println("Created user with the ID: " + id);
+          responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object created.");
+
+        }
+        else{
+          resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+          responseBody = generateResponse(-1, HttpServletResponse.SC_FORBIDDEN,"Method POST is not allowed for key: "+key);
+        }
 
       } catch (RequestException re) {
         resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         responseBody = generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
       } catch (DataException e) {
         resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        responseBody =
-            generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+        responseBody = generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
       }
     }
     else{
@@ -103,25 +106,28 @@ public class PIIServlet extends HttpServlet {
     Object responseBody;
     if (piiSqlDataAccess != null) {
       try {
-        long id = this.validator.getIdForGetDeletePut(req);
+        if (piiSqlDataAccess.isMethodAllowed(key, PIISqlDataAccess.METHOD.DELETE)) {
+          long id = this.validator.getIdForGetDeletePut(req);
 
-        this.piiStorage.deletePII(id);
-        JsonObject delObject = new JsonObject();
-        delObject.addProperty("all", "deleted");
-        this.piiSqlDataAccess.recordChange(key, id, delObject);
-        System.out.println("Deleted user with the ID: " + id);
-        responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object deleted.");
-
+          this.piiStorage.deletePII(id);
+          JsonObject delObject = new JsonObject();
+          delObject.addProperty("all", "deleted");
+          this.piiSqlDataAccess.recordChange(key, id, delObject);
+          System.out.println("Deleted user with the ID: " + id);
+          responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object deleted.");
+        }
+        else{
+          resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+          responseBody = generateResponse(-1, HttpServletResponse.SC_FORBIDDEN,"Method DELETE is not allowed for key: "+key);
+        }
       } catch (RequestException re) {
         System.err.println("Request error - ID not found. Error: " + re.getMessage());
         resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        responseBody =
-            this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+        responseBody = this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
       } catch (DataException e) {
         System.err.println("Error recording to the audit. Error: " + e.getMessage());
         resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        responseBody =
-                this.generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+        responseBody = this.generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
       }
     }
     else{
@@ -141,23 +147,26 @@ public class PIIServlet extends HttpServlet {
     Object responseBody;
     if (piiSqlDataAccess != null) {
       try {
-        long id = this.validator.getIdForGetDeletePut(req);
-        JsonObject data = this.validator.getJsonPayload(req);
-        this.piiStorage.updatePII(id, data);
-        this.piiSqlDataAccess.recordChange(key, id, data);
-        System.out.println("Updated user with the ID: " + id);
-        responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object updated.");
-
+        if (piiSqlDataAccess.isMethodAllowed(key, PIISqlDataAccess.METHOD.PUT)) {
+          long id = this.validator.getIdForGetDeletePut(req);
+          JsonObject data = this.validator.getJsonPayload(req);
+          this.piiStorage.updatePII(id, data);
+          this.piiSqlDataAccess.recordChange(key, id, data);
+          System.out.println("Updated user with the ID: " + id);
+          responseBody =
+              this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object updated.");
+        }
+        else{
+          resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+          responseBody = generateResponse(-1, HttpServletResponse.SC_FORBIDDEN,"Method PUT is not allowed for key: "+key);
+        }
       } catch (RequestException re) {
-        System.err.println(
-            "Request error: either ID not found or pahload is not JSON. Error: " + re.getMessage());
+        System.err.println("Request error: either ID not found or pahload is not JSON. Error: " + re.getMessage());
         resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        responseBody =
-            this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+        responseBody = this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
       } catch (DataException e) {
         resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        responseBody =
-            generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+        responseBody = generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
       }
     }
     else {
@@ -178,35 +187,35 @@ public class PIIServlet extends HttpServlet {
     Object responseBody;
     if (piiSqlDataAccess!= null) {
       try {
-        long id = this.validator.getIdForGetDeletePut(req);
+        if (piiSqlDataAccess.isMethodAllowed(key, PIISqlDataAccess.METHOD.GET)) {
+          long id = this.validator.getIdForGetDeletePut(req);
 
-        String fields = req.getParameter("data");
+          String fields = req.getParameter("data");
 
-        JsonObject data = this.piiStorage.getPII(id);
-        if (data == null) {
-          System.err.println("User with id " + id + " is not found!");
-          resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-          responseBody =
-              this.generateResponse(
-                  id, HttpServletResponse.SC_NOT_FOUND, "User with id " + id + " is not found!");
-        } else {
-          System.out.println("Found data for the user " + id + ": " + data.toString());
-          data = this.returnedDataProcessor.removedUnneededFields(data, fields);
-          responseBody = data;
+          JsonObject data = this.piiStorage.getPII(id);
+          if (data == null) {
+            System.err.println("User with id " + id + " is not found!");
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            responseBody =
+                this.generateResponse(
+                    id, HttpServletResponse.SC_NOT_FOUND, "User with id " + id + " is not found!");
+          } else {
+            System.out.println("Found data for the user " + id + ": " + data.toString());
+            data = this.returnedDataProcessor.removedUnneededFields(data, fields);
+            responseBody = data;
+          }
+        }
+        else{
+          resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+          responseBody = generateResponse(-1, HttpServletResponse.SC_FORBIDDEN,"Method GET is not allowed for key: "+key);
         }
       } catch (RequestException re) {
         System.err.println("Invalid json. Error: " + re.getMessage());
         resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        responseBody =
-            this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
-      } catch (DataException e) {
+        responseBody = this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+      } catch (DataException | DataProcessorException e) {
         resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        responseBody =
-            generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
-      } catch (DataProcessorException e) {
-        resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        responseBody =
-            generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+        responseBody = generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
       }
     }
     else{
