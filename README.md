@@ -15,4 +15,8 @@ Authentication to the service is accomplished via the API Keys that are managed 
 
 ![image](https://user-images.githubusercontent.com/7335416/52501443-3886f180-2b95-11e9-88e2-c27be24e310b.png)
 
-PII Data is store in a Firestore NoSQL database that allows storing easy expansion of the data fieds without 
+PII Data is store in a Firestore NoSQL database that allows storing easy expansion of the data fieds without any modificaitons of changes to the service. For each entry Cloud Store automatically assigns unique ID for the user that is returned to the caller upon the record creation.
+
+Service also maintains an audit log that is stored in a table in CloudSQL MySQL database; each log entry contains the API key that was used for the operation, unique ID of the user, name of the field that was change and the new values. Delete operation is indicated as name of the field "all" and value set to "delete".
+
+
