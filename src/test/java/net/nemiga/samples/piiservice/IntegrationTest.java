@@ -18,6 +18,10 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 
+/*
+    !!! Do not forget to start SQL Proxy! ./runCloudSQLProxy.sh if run locally!
+ */
+
 public class IntegrationTest {
   public static void main(String[] args) throws IOException {
     // Initialize SQL
