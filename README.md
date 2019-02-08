@@ -45,7 +45,7 @@ To build and deploy a solution run the following command:
 
 To perform full end-to end integration test, run the following command:
 ```
-mvn exec:java -Dexec.mainClass="net.nemiga.samples.piiservice.IntegrationTest" -Dexec.classpathScope="test" 
+mvn exec:java -Dexec.mainClass="net.nemiga.samples.piiservice.IntegrationTest" -Dexec.classpathScope="test" -Dexec.args="{YOUR API KEY}"
 ```
 
 _Note_ Unit-tests require access to a database - Cloud SQL Proxy should be running. To start the proxy, use the following command:
