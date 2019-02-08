@@ -54,3 +54,10 @@ _Note_ Unit-tests require access to a database - Cloud SQL Proxy should be runni
 ```
 
 Script _runPiiTest.sh_ contains sample commands to test the service with Curl.
+
+## Using the PII Service API
+OpenAPI specification stored in _openapi.yml_ contains full documentation for the service.
+The following screenshots from Cloud Endpoints Development Portal illustrate the use of each API.
+### Create PII for the user (POST)
+![image](https://user-images.githubusercontent.com/7335416/52505034-185c3000-2b9f-11e9-8d1a-fc567cc98a50.png)
+
