@@ -19,16 +19,19 @@ package net.nemiga.samples.piiservice;
 import com.google.gson.*;
 import net.nemiga.samples.piiservice.data.DataException;
 import net.nemiga.samples.piiservice.data.piistorage.PIIStorage;
+import net.nemiga.samples.piiservice.data.sql.PIISqlDataAccess;
 import net.nemiga.samples.piiservice.processors.DataProcessorException;
 import net.nemiga.samples.piiservice.processors.ReturnedDataProcessor;
 import net.nemiga.samples.piiservice.validators.RequestException;
 import net.nemiga.samples.piiservice.validators.RequestValidator;
 
+import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Properties;
 
 /** A servlet that echoes JSON message bodies. */
 @WebServlet("/pii/*")
@@ -40,6 +43,24 @@ public class PIIServlet extends HttpServlet {
 
   private final PIIStorage piiStorage = new PIIStorage();
   private final ReturnedDataProcessor returnedDataProcessor = new ReturnedDataProcessor();
+  private PIISqlDataAccess piiSqlDataAccess = null;
+
+  @Override
+  public void init() throws ServletException {
+      Properties properties = new Properties();
+      try {
+        properties.load(getServletContext().getResourceAsStream("/WEB-INF/classes/config.properties"));
+        String url = properties.getProperty("sqlUrl");
+        System.out.println("Initializing SQL module with the URL: "+url);
+        this.piiSqlDataAccess = new PIISqlDataAccess(url);
+      } catch (IOException e) {
+        System.err.println("Cannot load URL property: "+e.getMessage());  // Servlet Init should never fail.
+        return;
+      } catch (DataException e) {
+        System.err.println("Cannot initialize the SQL module: "+e.getMessage());  // Servlet Init should never fail.
+        return;
+      }
+  }
 
   @Override
   public void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -48,22 +69,27 @@ public class PIIServlet extends HttpServlet {
 
     System.out.println("Received POST request with the key: " + key);
     Object responseBody;
-    try {
-      JsonObject data = this.validator.getJsonPayload(req);
-      // TODO: Add validation for the presense of the required fiedls
+    if (piiSqlDataAccess != null) {
+      try {
+        JsonObject data = this.validator.getJsonPayload(req);
+        // TODO: Add validation for the presense of the required fiedls
 
+        long id = piiStorage.createPII(data);
+        this.piiSqlDataAccess.recordChange(key, id, data);
+        System.out.println("Created user with the ID: " + id);
+        responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object created.");
 
-      long id =  piiStorage.createPII(data);
-      System.out.println("Crteated user with the ID: "+id);
-      responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object created.");
-
-    } catch (RequestException re) {
-      resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      responseBody = generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
-    } catch (DataException e) {
-      resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-      responseBody = generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
-
+      } catch (RequestException re) {
+        resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        responseBody = generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+      } catch (DataException e) {
+        resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        responseBody =
+            generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+      }
+    }
+    else{
+      responseBody = generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "SQL module is not initialized");
     }
 
     new Gson().toJson(responseBody, resp.getWriter());
@@ -75,18 +101,31 @@ public class PIIServlet extends HttpServlet {
     String key = req.getParameter("key");
     System.out.println("Received DELETE request with the key: " + key);
     Object responseBody;
-    try {
-      long id = this.validator.getIdForGetDeletePut(req);
+    if (piiSqlDataAccess != null) {
+      try {
+        long id = this.validator.getIdForGetDeletePut(req);
 
-      this.piiStorage.deletePII(id);
+        this.piiStorage.deletePII(id);
+        JsonObject delObject = new JsonObject();
+        delObject.addProperty("all", "deleted");
+        this.piiSqlDataAccess.recordChange(key, id, delObject);
+        System.out.println("Deleted user with the ID: " + id);
+        responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object deleted.");
 
-      System.out.println("Deleted user with the ID: "+id);
-      responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object deleted.");
-
-    } catch (RequestException re) {
-      System.err.println("Request error - ID not found. Error: " + re.getMessage());
-      resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      responseBody = this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+      } catch (RequestException re) {
+        System.err.println("Request error - ID not found. Error: " + re.getMessage());
+        resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        responseBody =
+            this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+      } catch (DataException e) {
+        System.err.println("Error recording to the audit. Error: " + e.getMessage());
+        resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        responseBody =
+                this.generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+      }
+    }
+    else{
+      responseBody = generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "SQL module is not initialized");
     }
 
     new Gson().toJson(responseBody, resp.getWriter());
@@ -100,23 +139,30 @@ public class PIIServlet extends HttpServlet {
 
     System.out.println("Received PUT request with the key: " + key);
     Object responseBody;
-    try {
-      long id = this.validator.getIdForGetDeletePut(req);
-      JsonObject data = this.validator.getJsonPayload(req);
-      this.piiStorage.updatePII(id,data);
+    if (piiSqlDataAccess != null) {
+      try {
+        long id = this.validator.getIdForGetDeletePut(req);
+        JsonObject data = this.validator.getJsonPayload(req);
+        this.piiStorage.updatePII(id, data);
+        this.piiSqlDataAccess.recordChange(key, id, data);
+        System.out.println("Updated user with the ID: " + id);
+        responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object updated.");
 
-      System.out.println("Updated user with the ID: "+id);
-      responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object updated.");
-
-    } catch (RequestException re) {
-      System.err.println("Request error: either ID not found or pahload is not JSON. Error: " + re.getMessage());
-      resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      responseBody = this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
-    } catch (DataException e) {
-      resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-      responseBody = generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+      } catch (RequestException re) {
+        System.err.println(
+            "Request error: either ID not found or pahload is not JSON. Error: " + re.getMessage());
+        resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        responseBody =
+            this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+      } catch (DataException e) {
+        resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        responseBody =
+            generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+      }
     }
-
+    else {
+      responseBody = generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "SQL module is not initialized");
+    }
     new Gson().toJson(responseBody, resp.getWriter());
   }
 
@@ -125,41 +171,52 @@ public class PIIServlet extends HttpServlet {
   @Override
   public void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
     resp.addHeader(CONTENT_ENCODING, APPLICATION_JSON);
+
     String key = req.getParameter("key");
 
     System.out.println("Received GET request with the key: " + key);
     Object responseBody;
-    try {
-      long id = this.validator.getIdForGetDeletePut(req);
+    if (piiSqlDataAccess!= null) {
+      try {
+        long id = this.validator.getIdForGetDeletePut(req);
 
-      String fields = req.getParameter("data");
+        String fields = req.getParameter("data");
 
-      JsonObject data = this.piiStorage.getPII(id);
-      if (data==null){
-        System.err.println("User with id "+id+" is not found!");
+        JsonObject data = this.piiStorage.getPII(id);
+        if (data == null) {
+          System.err.println("User with id " + id + " is not found!");
+          resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+          responseBody =
+              this.generateResponse(
+                  id, HttpServletResponse.SC_NOT_FOUND, "User with id " + id + " is not found!");
+        } else {
+          System.out.println("Found data for the user " + id + ": " + data.toString());
+          data = this.returnedDataProcessor.removedUnneededFields(data, fields);
+          responseBody = data;
+        }
+      } catch (RequestException re) {
+        System.err.println("Invalid json. Error: " + re.getMessage());
         resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        responseBody = this.generateResponse(id, HttpServletResponse.SC_NOT_FOUND, "User with id "+id+" is not found!" );
+        responseBody =
+            this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+      } catch (DataException e) {
+        resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        responseBody =
+            generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+      } catch (DataProcessorException e) {
+        resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        responseBody =
+            generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
       }
-      else{
-        System.out.println("Found data for the user "+id+": "+data.toString());
-        data = this.returnedDataProcessor.removedUnneededFields(data, fields);
-        responseBody = data;
-      }
-    } catch (RequestException re) {
-      System.err.println("Invalid json. Error: " + re.getMessage());
-      resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      responseBody = this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
-    } catch (DataException e) {
-      resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-      responseBody = generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
-    } catch (DataProcessorException e) {
-      resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-      responseBody = generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+    }
+    else{
+      responseBody = generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "SQL module is not initialized");
     }
 
     new Gson().toJson(responseBody, resp.getWriter());
 
   }
+
 
   private JsonObject generateResponse(long id, int responseCode, String message){
     JsonObject responseObject = new JsonObject();

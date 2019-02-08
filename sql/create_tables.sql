@@ -3,9 +3,9 @@ use pii;
 drop table if exists Audit_Log;
 
 create table Audit_Log (
-	id integer NOT NULL auto_increment,
+	id int NOT NULL auto_increment,
     api_key VARCHAR(255) NOT NULL,
-    user_id integer not null,
+    user_id bigint not null,
     field_name varchar(255) NOT NULL,
     field_value_as_string varchar(255) NOT NULL,
     change_time datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -28,4 +28,5 @@ create table Api_Access (
     unique index (api_key, method)
 )
 
-
+# Use this statement to get the data
+# select count(*) from Api_Access where api_key='AIzaSyCBCFX7_YoiaVMaS0kkaYGhykcF-xdPYTs' and method = 'PUT'

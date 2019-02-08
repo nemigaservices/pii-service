@@ -45,7 +45,7 @@ public class PIISqlDataAccess {
      * @param piiData JSON object containing the fields and their values for the change
      * @throws DataException indicates an issue with accessing the database
      */
-    public void recordChange(String apiKey, int id, JsonObject piiData) throws DataException{
+    public void recordChange(String apiKey, long id, JsonObject piiData) throws DataException{
         Set<Map.Entry<String, JsonElement>> entrySet = piiData.entrySet();
         for (Map.Entry<String, JsonElement> entry : entrySet) {
             String dataKey = entry.getKey();
@@ -71,7 +71,7 @@ public class PIISqlDataAccess {
 
             try (PreparedStatement statementInsertAuditRecord = conn.prepareStatement(INSERT_AUDIT_RECORD_SQL)) {
                 statementInsertAuditRecord.setString(1, apiKey);
-                statementInsertAuditRecord.setInt(2, id);
+                statementInsertAuditRecord.setLong(2, id);
                 statementInsertAuditRecord.setString(3, dataKey);
                 statementInsertAuditRecord.setString(4, dataValue);
 
@@ -119,7 +119,7 @@ public class PIISqlDataAccess {
                 String result="";
                 while (rs.next()) {
                     result+=rs.getString("api_key")+", ";
-                    result+=rs.getInt("user_id")+", ";
+                    result+=rs.getLong("user_id")+", ";
                     result+=rs.getString("field_name")+", ";
                     result+=rs.getString("field_value_as_string")+"\n";
                 }
@@ -131,10 +131,10 @@ public class PIISqlDataAccess {
     /*
         Method is used for testing
      */
-    void deleteTestData(String apiKey, int id) throws SQLException{
+    void deleteTestData(String apiKey, long id) throws SQLException{
         try (PreparedStatement statementInsertAuditRecord = conn.prepareStatement(DELETE_AUDIT_RECORD_SQL)) {
             statementInsertAuditRecord.setString(1, apiKey);
-            statementInsertAuditRecord.setInt(2, id);
+            statementInsertAuditRecord.setLong(2, id);
 
             statementInsertAuditRecord.executeUpdate();
         }
