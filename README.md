@@ -19,4 +19,5 @@ PII Data is store in a Firestore NoSQL database that allows storing easy expansi
 
 Service also maintains an audit log that is stored in a table in CloudSQL MySQL database; each log entry contains the API key that was used for the operation, unique ID of the user, name of the field that was change and the new values. Delete operation is indicated as name of the field "all" and value set to "delete".
 
+![image](https://user-images.githubusercontent.com/7335416/52502709-4ab65f00-2b98-11e9-8bcf-2dcc6f9a5e01.png)
 
