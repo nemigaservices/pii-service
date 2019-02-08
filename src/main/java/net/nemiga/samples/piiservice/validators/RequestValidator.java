@@ -17,20 +17,23 @@ public class RequestValidator {
         try {
             JsonElement bodyElement = parser.parse(request.getReader());
             JsonObject body = bodyElement.getAsJsonObject();
+            if (body.entrySet().isEmpty()){
+                throw new RequestException(" Empty Json object!");
+            }
             return body;
         } catch (IOException e) {
             throw new RequestException("Error parsing JSON in the request: "+e.getMessage());
         }
     }
 
-    public int getIdForGetDeletePut(HttpServletRequest request) throws RequestException{
+    public long getIdForGetDeletePut(HttpServletRequest request) throws RequestException{
         String pathInfo = request.getPathInfo(); // /{value}/test
         String[] pathParts = pathInfo.split("/");
         if (pathParts.length!=2){
             throw new RequestException("Path for GET should match /pii/{ID}");
         }
         try{
-            return Integer.parseInt(pathParts[1]);
+            return Long.parseLong(pathParts[1]);
         }
         catch (Exception e){
             throw new RequestException("ID is not an integer!");

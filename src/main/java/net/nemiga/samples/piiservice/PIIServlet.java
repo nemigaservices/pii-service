@@ -17,6 +17,10 @@
 package net.nemiga.samples.piiservice;
 
 import com.google.gson.*;
+import net.nemiga.samples.piiservice.data.DataException;
+import net.nemiga.samples.piiservice.data.piistorage.PIIStorage;
+import net.nemiga.samples.piiservice.processors.DataProcessorException;
+import net.nemiga.samples.piiservice.processors.ReturnedDataProcessor;
 import net.nemiga.samples.piiservice.validators.RequestException;
 import net.nemiga.samples.piiservice.validators.RequestValidator;
 
@@ -34,6 +38,9 @@ public class PIIServlet extends HttpServlet {
   private static final String APPLICATION_JSON = "application/json";
   private final RequestValidator validator=new RequestValidator();
 
+  private final PIIStorage piiStorage = new PIIStorage();
+  private final ReturnedDataProcessor returnedDataProcessor = new ReturnedDataProcessor();
+
   @Override
   public void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
     resp.addHeader(CONTENT_ENCODING, APPLICATION_JSON);
@@ -43,15 +50,20 @@ public class PIIServlet extends HttpServlet {
     Object responseBody;
     try {
       JsonObject data = this.validator.getJsonPayload(req);
+      // TODO: Add validation for the presense of the required fiedls
 
-      int id = 1000;
 
+      long id =  piiStorage.createPII(data);
       System.out.println("Crteated user with the ID: "+id);
       responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object created.");
 
     } catch (RequestException re) {
       resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
       responseBody = generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+    } catch (DataException e) {
+      resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      responseBody = generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+
     }
 
     new Gson().toJson(responseBody, resp.getWriter());
@@ -64,7 +76,9 @@ public class PIIServlet extends HttpServlet {
     System.out.println("Received DELETE request with the key: " + key);
     Object responseBody;
     try {
-      int id = this.validator.getIdForGetDeletePut(req);
+      long id = this.validator.getIdForGetDeletePut(req);
+
+      this.piiStorage.deletePII(id);
 
       System.out.println("Deleted user with the ID: "+id);
       responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object deleted.");
@@ -87,7 +101,9 @@ public class PIIServlet extends HttpServlet {
     System.out.println("Received PUT request with the key: " + key);
     Object responseBody;
     try {
-      int id = this.validator.getIdForGetDeletePut(req);
+      long id = this.validator.getIdForGetDeletePut(req);
+      JsonObject data = this.validator.getJsonPayload(req);
+      this.piiStorage.updatePII(id,data);
 
       System.out.println("Updated user with the ID: "+id);
       responseBody = this.generateResponse(id, HttpServletResponse.SC_OK, "PII Object updated.");
@@ -96,6 +112,9 @@ public class PIIServlet extends HttpServlet {
       System.err.println("Request error: either ID not found or pahload is not JSON. Error: " + re.getMessage());
       resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
       responseBody = this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+    } catch (DataException e) {
+      resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      responseBody = generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
     }
 
     new Gson().toJson(responseBody, resp.getWriter());
@@ -111,31 +130,38 @@ public class PIIServlet extends HttpServlet {
     System.out.println("Received GET request with the key: " + key);
     Object responseBody;
     try {
-      int id = this.validator.getIdForGetDeletePut(req);
+      long id = this.validator.getIdForGetDeletePut(req);
 
       String fields = req.getParameter("data");
 
-
-      JsonObject data = new JsonObject();
-      data.addProperty("key", key);
-      if (fields == null)
-        data.addProperty("name", "Joe Test");
-      data.addProperty("phone", "555-555-5555");
-      data.addProperty("email","test@test.org");
-      System.out.println("User found, sending the reply.");
-      responseBody = data;
-
+      JsonObject data = this.piiStorage.getPII(id);
+      if (data==null){
+        System.err.println("User with id "+id+" is not found!");
+        resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        responseBody = this.generateResponse(id, HttpServletResponse.SC_NOT_FOUND, "User with id "+id+" is not found!" );
+      }
+      else{
+        System.out.println("Found data for the user "+id+": "+data.toString());
+        data = this.returnedDataProcessor.removedUnneededFields(data, fields);
+        responseBody = data;
+      }
     } catch (RequestException re) {
       System.err.println("Invalid json. Error: " + re.getMessage());
       resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
       responseBody = this.generateResponse(-1, HttpServletResponse.SC_BAD_REQUEST, re.getMessage());
+    } catch (DataException e) {
+      resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      responseBody = generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+    } catch (DataProcessorException e) {
+      resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      responseBody = generateResponse(-1, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
     }
 
     new Gson().toJson(responseBody, resp.getWriter());
 
   }
 
-  private JsonObject generateResponse(int id, int responseCode, String message){
+  private JsonObject generateResponse(long id, int responseCode, String message){
     JsonObject responseObject = new JsonObject();
     responseObject.addProperty("code", responseCode);
     responseObject.addProperty("message",message);

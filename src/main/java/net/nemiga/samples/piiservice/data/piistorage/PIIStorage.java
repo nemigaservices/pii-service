@@ -80,7 +80,7 @@ public class PIIStorage {
    * @throws DatastoreException if the transaction fails
    * @throws DataException if there is an issue with the data
    */
-  boolean updatePII(long id, JsonObject piiData) throws DataException {
+  public boolean updatePII(long id, JsonObject piiData) throws DataException {
     Transaction transaction = datastore.newTransaction();
     try {
       Entity pii = transaction.get(keyFactory.newKey(id));
@@ -107,7 +107,7 @@ public class PIIStorage {
    * @param id The ID of the user
    * @throws DatastoreException if the delete fails
    */
-  void deletePII(long id) {
+  public void deletePII(long id) {
     datastore.delete(keyFactory.newKey(id));
   }
   // [END datastore_delete_entity]
