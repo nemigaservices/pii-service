@@ -64,5 +64,6 @@ The following screenshots from Cloud Endpoints Development Portal illustrate the
 ![image](https://user-images.githubusercontent.com/7335416/52505204-a506ee00-2b9f-11e9-967e-a204d2bc2bc5.png)
 ### Retrieve PII for the user (GET) with limited set of fields
 ![image](https://user-images.githubusercontent.com/7335416/52505395-370ef680-2ba0-11e9-9a40-f9faa6501544.png)
-
+### Delete PII for the user (DELETE)
+![image](https://user-images.githubusercontent.com/7335416/52505488-7e958280-2ba0-11e9-9ebf-139d5badd5ad.png)
 
