@@ -21,3 +21,11 @@ Service also maintains an audit log that is stored in a table in CloudSQL MySQL 
 
 ![image](https://user-images.githubusercontent.com/7335416/52502709-4ab65f00-2b98-11e9-8bcf-2dcc6f9a5e01.png)
 
+## Data Encryption
+In-transit data encrypotion is assured by SSL enforced by the Cloud Store.
+
+Data storage encryption is assured by Google - all data stored in the Cloud Store and Cloud SQL is always encrypted. 
+Here are some references:
+https://cloud.google.com/datastore/docs/concepts/encryption-at-rest
+https://cloud.google.com/sql/faq#encryption
+
