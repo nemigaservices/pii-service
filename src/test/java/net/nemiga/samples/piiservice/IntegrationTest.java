@@ -24,6 +24,14 @@ import org.apache.http.impl.client.HttpClientBuilder;
 
 public class IntegrationTest {
   public static void main(String[] args) throws IOException {
+
+    if (args.length!=1){
+      System.out.println("Please, provide API key as an argument.");
+      System.exit(-1);
+    }
+
+    String apiKey=args[0];
+
     // Initialize SQL
     PIISqlDataAccess piiSqlDataAccess=null;
     try {
@@ -44,7 +52,7 @@ public class IntegrationTest {
     pii.addProperty("email", "test@test.com");
 
     // Create PII entry
-    HttpPost postRequest = new HttpPost("https://pii-service.appspot.com/pii?key=AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I");
+    HttpPost postRequest = new HttpPost("https://pii-service.appspot.com/pii?key="+apiKey);
     StringEntity postingString = new StringEntity(pii.toString());
     postRequest.setEntity(postingString);
     postRequest.setHeader("Content-type", "application/json");
@@ -71,10 +79,10 @@ public class IntegrationTest {
     System.out.println("Created customer with ID: "+id);
 
     try {
-      String auditEntries = piiSqlDataAccess.getAuditDataAsStringForTesting("AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I", id );
-      String expected = "AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I, "+id+", name, Test\n"+
-        "AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I, "+id+", phone, 555-555-5555\n"+
-        "AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I, "+id+", email, test@test.com\n";
+      String auditEntries = piiSqlDataAccess.getAuditDataAsStringForTesting(apiKey, id );
+      String expected = apiKey+", "+id+", name, Test\n"+
+        apiKey+", "+id+", phone, 555-555-5555\n"+
+        apiKey+", "+id+", email, test@test.com\n";
         if (!auditEntries.equals(expected)){
             System.err.println("Audit entries are incorrect (Create user)!\n Expected:["+expected+"]\nReceived: ["+auditEntries+"]");
             System.exit(-1);
@@ -85,7 +93,7 @@ public class IntegrationTest {
     }
 
     // Get created PII
-    HttpGet getRequest = new HttpGet("https://pii-service.appspot.com/pii/"+id+"?key=AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I");
+    HttpGet getRequest = new HttpGet("https://pii-service.appspot.com/pii/"+id+"?key="+apiKey);
     response = client.execute(getRequest);
     rd = new BufferedReader (new InputStreamReader(response.getEntity().getContent()));
     responseData = "";
@@ -102,7 +110,7 @@ public class IntegrationTest {
     JsonObject piiUpd = new JsonObject();
     piiUpd.addProperty("phone", "666-666-6666");
 
-    HttpPut putRequest = new HttpPut("https://pii-service.appspot.com/pii/"+id+"?key=AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I");
+    HttpPut putRequest = new HttpPut("https://pii-service.appspot.com/pii/"+id+"?key="+apiKey);
     StringEntity putString = new StringEntity(piiUpd.toString());
     putRequest.setEntity(putString);
     putRequest.setHeader("Content-type", "application/json");
@@ -121,11 +129,11 @@ public class IntegrationTest {
     }
 
     try {
-      String auditEntries = piiSqlDataAccess.getAuditDataAsStringForTesting("AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I", id );
-      String expected = "AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I, "+id+", name, Test\n"+
-              "AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I, "+id+", phone, 555-555-5555\n"+
-              "AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I, "+id+", email, test@test.com\n"+
-              "AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I, "+id+", phone, 666-666-6666\n";
+      String auditEntries = piiSqlDataAccess.getAuditDataAsStringForTesting(apiKey, id );
+      String expected = apiKey+", "+id+", name, Test\n"+
+              apiKey+", "+id+", phone, 555-555-5555\n"+
+              apiKey+", "+id+", email, test@test.com\n"+
+              apiKey+", "+id+", phone, 666-666-6666\n";
       if (!auditEntries.equals(expected)){
         System.err.println("Audit entries are incorrect (Update user)!\n Expected:["+expected+"]\nReceived: ["+auditEntries+"]");
         System.exit(-1);
@@ -136,7 +144,7 @@ public class IntegrationTest {
     }
 
     // Get updated PII
-    getRequest = new HttpGet("https://pii-service.appspot.com/pii/"+id+"?key=AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I");
+    getRequest = new HttpGet("https://pii-service.appspot.com/pii/"+id+"?key="+apiKey);
     response = client.execute(getRequest);
     rd = new BufferedReader (new InputStreamReader(response.getEntity().getContent()));
     responseData = "";
@@ -149,7 +157,7 @@ public class IntegrationTest {
     }
 
     // Delete the object
-    HttpDelete deleteRequest = new HttpDelete("https://pii-service.appspot.com/pii/"+id+"?key=AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I");
+    HttpDelete deleteRequest = new HttpDelete("https://pii-service.appspot.com/pii/"+id+"?key="+apiKey);
     response = client.execute(deleteRequest);
     rd = new BufferedReader (new InputStreamReader(response.getEntity().getContent()));
     responseData = "";
@@ -165,7 +173,7 @@ public class IntegrationTest {
     }
 
 
-    getRequest = new HttpGet("https://pii-service.appspot.com/pii/"+id+"?key=AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I");
+    getRequest = new HttpGet("https://pii-service.appspot.com/pii/"+id+"?key="+apiKey);
     response = client.execute(getRequest);
     if (response.getStatusLine().getStatusCode()!=404){
       System.err.println("Object was not deleted!");
@@ -173,12 +181,12 @@ public class IntegrationTest {
     }
 
     try {
-      String auditEntries = piiSqlDataAccess.getAuditDataAsStringForTesting("AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I", id );
-      String expected = "AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I, "+id+", name, Test\n"+
-              "AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I, "+id+", phone, 555-555-5555\n"+
-              "AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I, "+id+", email, test@test.com\n"+
-              "AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I, "+id+", phone, 666-666-6666\n"+
-              "AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I, "+id+", all, deleted\n";
+      String auditEntries = piiSqlDataAccess.getAuditDataAsStringForTesting(apiKey, id );
+      String expected = apiKey+", "+id+", name, Test\n"+
+              apiKey+", "+id+", phone, 555-555-5555\n"+
+              apiKey+", "+id+", email, test@test.com\n"+
+              apiKey+", "+id+", phone, 666-666-6666\n"+
+              apiKey+", "+id+", all, deleted\n";
       if (!auditEntries.equals(expected)){
         System.err.println("Audit entries are incorrect (Update user)!\n Expected:["+expected+"]\nReceived: ["+auditEntries+"]");
         System.exit(-1);
@@ -189,7 +197,7 @@ public class IntegrationTest {
     }
 
     try {
-      piiSqlDataAccess.deleteTestData("AIzaSyDvl4L2SOY_jtgm6GvLzJM24A9G1tdV72I", id);
+      piiSqlDataAccess.deleteTestData(apiKey, id);
     } catch (SQLException e) {
       System.err.println("Error deleting test data: "+e.getMessage());
       System.exit(-1);
