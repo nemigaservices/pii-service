@@ -21,11 +21,36 @@ Service also maintains an audit log that is stored in a table in CloudSQL MySQL 
 
 ![image](https://user-images.githubusercontent.com/7335416/52502709-4ab65f00-2b98-11e9-8bcf-2dcc6f9a5e01.png)
 
-## Data Encryption
-In-transit data encrypotion is assured by SSL enforced by the Cloud Store.
+### Data Encryption
+In-transit data encrypotion is assured by SSL enforced by the Cloud Endpoints.
 
-Data storage encryption is assured by Google - all data stored in the Cloud Store and Cloud SQL is always encrypted. 
-Here are some references:
-https://cloud.google.com/datastore/docs/concepts/encryption-at-rest
-https://cloud.google.com/sql/faq#encryption
+Data storage encryption is assured by Google - all data stored in the Firestore and Cloud SQL is always encrypted. 
 
+Presently default encryption options are chosen for Firestore https://cloud.google.com/firestore/docs/server-side-encryption, however, advanced encryption options are available by Google should it become necessary https://cloud.google.com/security/encryption-at-rest/.
+
+Information about Cloud SQL data encryption can be found here: https://cloud.google.com/sql/faq#encryption
+
+### Vendor dependency
+Current implementaion has the following vendor dependency.
+- Firestore - high. All the code for interacting with the firestore is contained in https://github.com/nemigaservices/pii-service/blob/master/src/test/java/net/nemiga/samples/piiservice/data/piistorage/PIIStorageTest.java. The effort to migrate to a different NoSQL should not exceed 2-4 hours.
+- App Engine Flex - medium to low. App Engine Flex just runs a docker container with Jetty and HttpServlet. The effort to migrate should be minimum dependently on the chosen new solution.
+- Cloud Endpoints - low. Cloud Endpoints are ony acting as a proxy - code does not contain anything specific for the endpoints. As the result, any other proxy that uses OpenAPI specification can be easily introduced.
+- Cloud SQL - low. The system uses MySQL; only the URL change will be required for the migration. 
+
+## Building and testing of the service
+To build and deploy a solution run the following command:
+```
+./buildAndDeploy.sh
+```
+
+To perform full end-to end integration test, run the following command:
+```
+mvn exec:java -Dexec.mainClass="net.nemiga.samples.piiservice.IntegrationTest" -Dexec.classpathScope="test" 
+```
+
+_Note_ Unit-tests require access to a database - Cloud SQL Proxy should be running. To start the proxy, use the following command:
+```
+./runCloudSQLProxy.sh 
+```
+
+Script _runPiiTest.sh_ contains sample commands to test the service with Curl.
