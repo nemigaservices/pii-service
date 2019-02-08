@@ -195,7 +195,7 @@ public class PIIServlet extends HttpServlet {
           JsonObject data = this.piiStorage.getPII(id);
           if (data == null) {
             System.err.println("User with id " + id + " is not found!");
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
             responseBody =
                 this.generateResponse(
                     id, HttpServletResponse.SC_NOT_FOUND, "User with id " + id + " is not found!");
