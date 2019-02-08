@@ -59,7 +59,8 @@ public class IntegrationTest {
     String retCode = responseJson.getAsJsonPrimitive("code").getAsString();
 
     if (!retCode.equals("200")){
-      System.err.println("POST returned an error "+retCode);
+      System.err.println("POST returned an error "+retCode+"\nMessage:"+responseJson.getAsJsonPrimitive("message").getAsString());
+
       System.exit(-1);
     }
 
@@ -115,7 +116,7 @@ public class IntegrationTest {
     retCode = responseJson.getAsJsonPrimitive("code").getAsString();
 
     if (!retCode.equals("200")){
-      System.err.println("PUT returned an error "+retCode);
+      System.err.println("PUT returned an error "+retCode+"\nMessage:"+responseJson.getAsJsonPrimitive("message").getAsString());
       System.exit(-1);
     }
 

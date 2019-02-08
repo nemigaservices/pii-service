@@ -31,3 +31,4 @@ hs_err_pid*
 /.project
 /endpoints.iml
 /.settings/
+/runPiiTestWithKeys.sh

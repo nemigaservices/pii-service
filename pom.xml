@@ -37,7 +37,7 @@
     <user>dbuser</user>
     <password>dbuser</password>
     <database>pii</database>
-    <sqlURL>jdbc:mysql://goo0gle/${database}?cloudSqlInstance=${INSTANCE_CONNECTION_NAME}&amp;socketFactory=com.google.cloud.sql.mysql.SocketFactory&amp;user=${user}&amp;password=${password}&amp;useSSL=false</sqlURL>
+    <sqlURL>jdbc:mysql://goo0gle/${database}?cloudSqlInstance=${INSTANCE_CONNECTION_NAME}&amp;socketFactory=com.google.cloud.sql.mysql.SocketFactory&amp;user=${user}&amp;password=${password}&amp;useSSL=false&amp;autoReconnect=true</sqlURL>
   </properties>
 
   <dependencies>
