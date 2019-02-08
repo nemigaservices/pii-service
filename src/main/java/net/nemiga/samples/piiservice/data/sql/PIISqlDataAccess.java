@@ -111,10 +111,10 @@ public class PIISqlDataAccess {
     /*
         Method is used for testing
      */
-    String getAuditDataAsStringForTesting(String apiKey, int id) throws SQLException{
+    public String getAuditDataAsStringForTesting(String apiKey, long id) throws SQLException{
         try (PreparedStatement obtainRecordsStatement = conn.prepareStatement(OBTAIN_AUDIT_RECORD_SQL)){
             obtainRecordsStatement.setString(1, apiKey);
-            obtainRecordsStatement.setInt(2, id);
+            obtainRecordsStatement.setLong(2, id);
             try (ResultSet rs = obtainRecordsStatement.executeQuery()) {
                 String result="";
                 while (rs.next()) {
@@ -131,7 +131,7 @@ public class PIISqlDataAccess {
     /*
         Method is used for testing
      */
-    void deleteTestData(String apiKey, long id) throws SQLException{
+    public void deleteTestData(String apiKey, long id) throws SQLException{
         try (PreparedStatement statementInsertAuditRecord = conn.prepareStatement(DELETE_AUDIT_RECORD_SQL)) {
             statementInsertAuditRecord.setString(1, apiKey);
             statementInsertAuditRecord.setLong(2, id);
