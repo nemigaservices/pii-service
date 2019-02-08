@@ -60,4 +60,6 @@ OpenAPI specification stored in _openapi.yml_ contains full documentation for th
 The following screenshots from Cloud Endpoints Development Portal illustrate the use of each API.
 ### Create PII for the user (POST)
 ![image](https://user-images.githubusercontent.com/7335416/52505034-185c3000-2b9f-11e9-8d1a-fc567cc98a50.png)
+### Update PII for the user (PUT)
+![image](https://user-images.githubusercontent.com/7335416/52505204-a506ee00-2b9f-11e9-967e-a204d2bc2bc5.png)
 
